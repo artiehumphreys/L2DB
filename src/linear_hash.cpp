@@ -1,6 +1,7 @@
 #include <cstdlib>
 #include <cstring>
 #include <new>
+#include <optional>
 
 #include "bucket.hpp"
 #include "common.hpp"
@@ -67,6 +68,22 @@ bool LinearHash::put(u64 key, u64 value) {
     }
 
     // collision
+    index = (index + 1) & mask_;
+    if (index % static_cast<u64>(bucketsPerLine) == 0)
+      prefetchL2(&buckets_[index]);
+  }
+}
+
+std::optional<u64> LinearHash::get(u64 key) {
+  u64 index = splitmax64(key) & mask_;
+
+  for (;;) {
+    const Bucket &b = buckets_[index];
+    if (b.key == 0) // terminate probe
+      return std::nullopt;
+    if (b.key == key)
+      return b.value;
+
     index = (index + 1) & mask_;
     if (index % static_cast<u64>(bucketsPerLine) == 0)
       prefetchL2(&buckets_[index]);
