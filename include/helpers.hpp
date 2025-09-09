@@ -1,8 +1,9 @@
+#include <algorithm>
 #include <bit>
 
 #include "common.hpp"
 
-static inline void prefetch_L2(const void *p) noexcept {
+static inline void prefetchL2(const void *p) noexcept {
   // explicitly instruct processor to prefetch data into cache
   // addr, r/w, expected temporal locality
   // ETL of 2 loads data into L2 or higher
@@ -18,4 +19,8 @@ static inline u64 splitmix64(u64 x) {
   return x ^ (x >> 31);
 }
 
-static inline u64 next_pow2(u64 x) { return std::bit_ceil(x); }
+static inline u64 nextPow2(u64 x) { return std::bit_ceil(x); }
+
+static inline double clampDouble(double x) {
+  return std::clamp(x, static_cast<double>(0.01), static_cast<double>(1.0));
+}
