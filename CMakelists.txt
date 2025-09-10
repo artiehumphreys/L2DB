@@ -1,0 +1,39 @@
+cmake_minimum_required(VERSION 3.20)
+project(L2KV LANGUAGES CXX)
+
+set(CMAKE_CXX_STANDARD 23)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+set(CMAKE_CXX_EXTENSIONS OFF)
+
+set(CACHELINE_BYTES "64" CACHE STRING "Cache line size in bytes (64 or 128)")
+
+option(ENABLE_SANITIZERS "Enable Address/Undefined sanitizers in Debug" OFF)
+
+add_executable(l2_kv
+  main.cpp
+  src/linear_hash.cpp
+)
+
+target_include_directories(l2_kv PRIVATE
+  ${CMAKE_CURRENT_SOURCE_DIR}/include
+)
+
+target_compile_definitions(l2_kv PRIVATE CACHELINE_BYTES=${CACHELINE_BYTES})
+
+if (MSVC)
+  target_compile_options(l2_kv PRIVATE /W4 /permissive-)
+else()
+  target_compile_options(l2_kv PRIVATE -Wall -Wextra -Wpedantic)
+  target_compile_options(l2_kv PRIVATE $<$<CONFIG:Release>:-O3 -march=native>)
+endif()
+
+if (ENABLE_SANITIZERS AND (CMAKE_CXX_COMPILER_ID MATCHES "Clang|GNU"))
+  target_compile_options(l2_kv PRIVATE $<$<CONFIG:Debug>:-fsanitize=address,undefined -fno-omit-frame-pointer>)
+  target_link_options(l2_kv PRIVATE $<$<CONFIG:Debug>:-fsanitize=address,undefined>)
+endif()
+
+include(CheckIPOSupported)
+check_ipo_supported(RESULT ipo_supported OUTPUT ipo_error)
+if (ipo_supported)
+  set_property(TARGET l2_kv PROPERTY INTERPROCEDURAL_OPTIMIZATION_RELEASE TRUE)
+endif()

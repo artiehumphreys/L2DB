@@ -5,15 +5,18 @@
 
 #include "bucket.hpp"
 #include "common.hpp"
+#include "helpers.hpp"
 #include "linear_hash.hpp"
 
-LinearHash::LinearHash(u64 l2Bytes, double tableFraction = 0.5,
-                       double loadFactor = 0.7) {
+LinearHash::LinearHash(u64 l2Bytes, double tableFraction, double loadFactor)
+    : maxLoadFactor_(clampDouble(loadFactor)) {
   tableFraction = clampDouble(tableFraction);
   loadFactor = clampDouble(loadFactor);
 
   u64 tableBytes = static_cast<u64>(l2Bytes * tableFraction);
   u64 maxBuckets = tableBytes / static_cast<u64>(sizeof(Bucket));
+  if (maxBuckets < 8)
+    maxBuckets = 8;
 
   u64 capacity = nextPow2(maxBuckets);
 
@@ -74,8 +77,8 @@ bool LinearHash::put(u64 key, u64 value) {
   }
 }
 
-std::optional<u64> LinearHash::get(u64 key) {
-  u64 index = splitmax64(key) & mask_;
+std::optional<u64> LinearHash::get(u64 key) const {
+  u64 index = splitmix64(key) & mask_;
 
   for (;;) {
     const Bucket &b = buckets_[index];
